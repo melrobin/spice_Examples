@@ -1,0 +1,46 @@
+.title Title for an example voltage divider circuit
+* This is not a voltage divider, but more of an example on how to 
+* add meaningful expressions when doing analysis.  This example is the
+* transient analysis of a small RC circuit.  
+* I should clean this up even in this small example, but not right now
+V1 1 g DC 0 PULSE (0 5 1u 1u 1u 1 1)
+* Our source is a pulse.  The pulse width should be commiserate with R and C
+* so that the plots can capture the complete decay when we do transient analysis
+
+* first create dummy sources so that we can measure the current through each
+* branch.  This is a necessary evil, but we can do things like i(vdummy2) later
+vdummy1 1 x1 dc 0
+vdummy2 x3 g dc 0
+vdummy3 x2 g dc 0
+R1 x1 load 10
+Cload load x3 1u
+R2 load x2 30
+* the essential part of the netlist has been created, now we specify our 
+* analysis, in this case transient analsysis for 100 micro seconds in half
+* microsecond steps
+.tran 0.5us 100us 0
+* The magic begins in the control loop!
+.control
+* Let's get this simulation party started!
+run
+* The simulation has been run, now let's prepare for some analysis, first
+* let's write some power expressions for the power of the resistors.  This
+* can take many forms, but we just use v^2/R
+let pR1=v(load,x1)*v(load,x1)/10
+let pR2=v(load,x2)*v(load,x2)/30
+* Next we have to calculate the power dissipated by that pesky capacitor
+* for this we just use good ole voltage times current
+let pCload=v(load,x3)*i(vdummy2)
+* let's write an expression for the power dissipated by the voltage source
+* of course this should be negative
+let power_source=v(1,g)*i(v1)
+* We now determine whether we are achieveing a power balance
+let power=pR1+pR2+pCload
+* These are some simple settings that create desired format of our datafile
+set wr_singlescale
+set wr_vecnames
+* and now......we write!
+wrdata data.out power_source power
+.endc
+* bye bye baby!  Peace!
+.end
